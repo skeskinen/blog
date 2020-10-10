@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Truthwatcher</title>
+        <link href="https://fonts.googleapis.com/css2?family=Inconsolata&family=IBM+Plex+Mono&display=swap" rel="stylesheet"> 
+        <link rel="stylesheet" href="/style.css">
+    </head>
+    <body>
+        <div class="all">
+            <header>
+                <a href="/"><img class="logo" src="/logo.svg" width=140 height=140 /></a>
+                <div class="title_holder">
+                    <div class="title"><a href="/">Truthwatcher</a></div>
+                    <div class="subtitle">I will seek truth</div>
+                </div>
+                <div class="quote">
+                     “{{ layout.quote_text }}” <br/>
+                    — {{ layout.quote_author }}
+                </div>
+            </header>
+            <nav class="top_navigation">
+                <div><a href="/">Home</a></div>
+                <div><a href="/archive">Archive</a></div>
+                <div><a href="/about">About</a></div>
+                </li>
+            </nav>
+            <main>
+                <div class="content">
+                    {% block content %} {% endblock %}
+                </div>
+                <div class="right_nav_divider"></div>
+                <nav class="right_navigation">
+                    <div>Latest articles
+                        <ul>
+                            {% for article in layout.recent_articles %}
+                                <li><a href="/a/{{article.name}}">{{article.title}}</a></li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    <div>Latest comments
+                        <ul>
+                            {% for comment_article in layout.recent_comments %}
+                                <li><a href="/a/{{comment_article.name}}">{{comment_article.title}}</a></li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    <div>Tags
+                        <ul>
+                            {% for tag in layout.tags %}
+                                <li><a href="/tag/{{tag.name}}">{{tag.name}} ({{tag.count}})</a></li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </nav>
+            </main>
+        </div>
+    </body>
+</html>

@@ -1,0 +1,59 @@
+{% extends "layout.html" %}
+{% block content %}
+<h1>{{article.title}}</h1>
+{{ content }}
+{% include "article-header.html" %}
+<div class="comment_divider"></div>
+<h3>Comments</h3>
+<script>function reply(i) {
+  var a=document.getElementById('text');
+  a.value='@' + i + '\n';
+  a.focus();
+}</script>
+{% if comments.is_empty() -%}
+  There is nothing here yet.
+{% else -%}
+  {% for comment in comments %}
+    <div id="{{comment.post_index}}" class="comment {% if loop.index0 & 1 == 0 -%}comment_even{% else -%}comment_odd{% endif -%}">
+      <div class="comment_header">
+        <span>
+          #{{ comment.post_index }}: On {{ comment.date }}, <b>{{ comment.author }}</b>
+          {% if comment.reply_to.is_some() -%}
+              replied to: <a href="#{{ comment.reply_to.unwrap() }}">#{{ comment.reply_to.unwrap() }}</a>:
+          {% else -%}
+              wrote:
+          {% endif -%}
+        </span>
+        <span class="reply_button"><a href="javascript:reply({{comment.post_index}})">Reply</a></span>
+      </div>
+      {{ comment.text }}
+      {% if !comment.replies.is_empty() -%}
+      <p><i>
+        Replies: 
+      {% for reply in comment.replies %}
+        <a href="#{{reply}}">#{{reply}}</a> {% if !loop.last -%},{% endif -%}
+      {% endfor %}
+      </i></p>
+      {% endif -%}
+    </div>
+  {% endfor %}
+{% endif -%}
+<h3>Comment</h3>
+<form action="/comment/{{article.name}}" method="POST">
+  <table>
+    <tr>
+      <td> <label for="author">Nickname</label> </td>
+      <td> <input name="author" id="author" placeholder="Optional"> </td>
+    </tr>
+    <tr>
+      <td> <label for="website">Website</label> </td>
+      <td> <input name="website" id="website" placeholder="Optional"> </td>
+    </tr>
+  </table>
+  <div>
+    <textarea name="text" id="text"></textarea>
+  </div>
+  <p>To filter ads and spam, all comments are manually reviewed before they become visible. You can use basic markdown in your comments.</p>
+  <input class="submit_comment" type="submit" value="Submit">
+</form>
+{% endblock content %}

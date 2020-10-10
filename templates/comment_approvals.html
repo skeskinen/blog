@@ -1,0 +1,16 @@
+{% extends "layout.html" %}
+{% block content %}
+<form method="POST">
+{% for comment in comments %}
+    Article: <a href="/a/{{ comment.1.article }}">{{ comment.1.article }}</a> <br/>
+    Author: {{ author_name(comment.1.author) }} <br/>
+    Website: {{ author_name(comment.1.website) }} <br/>
+    {{ comment.0 }}
+    <label>Ignore</label> <input type=radio name={{loop.index0}} value="ignore" checked>
+    <label>Approve</label> <input type=radio name={{loop.index0}} value="approve">
+    <label>Delete</label> <input type=radio name={{loop.index0}} value="delete">
+    <div class="comment_divider"></div>
+{% endfor %}
+  <input type="submit" value="Submit">
+</form>
+{% endblock content %}

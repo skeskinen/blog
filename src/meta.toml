@@ -1,0 +1,20 @@
+tags = ["Web", "Simplicity", "Meta"]
+
+[[projects]]
+name = "bridge"
+title = "Bridge.gg"
+order = 0
+
+[[articles]]
+name = "test"
+description = "testing home page"
+title = "Test"
+date = 2020-10-02
+tags = ["Meta"]
+
+[[articles]]
+name = "static_web_content"
+description = "kaikki on pilalla"
+title = "Static web content"
+date = 2020-10-02
+tags = ["Web", "Simplicity", "Meta"]
