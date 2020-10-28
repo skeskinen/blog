@@ -12,7 +12,7 @@ body {
   margin: auto;
   display: flex;
   flex-direction: column;
-  background-color: black; }
+  background-color: #3b3b3b; }
 
 ul {
   padding-left: 25px; }
@@ -31,8 +31,8 @@ nav a {
   flex-direction: column; }
 
 .logo {
-  width: 140px;
-  height: 140px; }
+  width: 120px;
+  height: 120px; }
 
 header {
   display: flex;
@@ -42,7 +42,8 @@ header {
 .title_holder {
   display: flex;
   flex-direction: column;
-  margin-left: 20px; }
+  margin-left: 20px;
+  min-width: 230px; }
 
 .title {
   font-size: 2em; }
@@ -59,11 +60,11 @@ header {
   flex-direction: row;
   justify-content: space-around;
   margin-top: 20px;
-  border-bottom: 1px solid black; }
+  border-bottom: 1px solid #3b3b3b; }
 
 .quote {
   font-size: 15px;
-  margin-left: 100px;
+  margin-left: 80px;
   margin-right: 60px;
   color: #5b5b5b; }
 
@@ -86,12 +87,12 @@ main {
   flex-grow: 1; }
 
 .right_nav_divider {
-  width: 3px;
-  background: linear-gradient(to left, rgba(0, 0, 0, 0.5), transparent); }
+  min-width: 1px;
+  background: #3b3b3b; }
 
 .comment_divider {
-  height: 3px;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.5), transparent);
+  min-height: 1px;
+  background: #3b3b3b;
   margin-top: 10px;
   margin-bottom: 10px; }
 
@@ -111,7 +112,11 @@ textarea {
   min-width: 400px;
   min-height: 150px; }
 
-@media (max-width: 600px) {
+@media (min-width: 650px) {
+  .right_navigation {
+    max-width: 230px; } }
+
+@media (max-width: 650px) {
   main {
     flex-direction: column; }
   .quote {
@@ -121,8 +126,8 @@ textarea {
   .right_nav_divider {
     margin-top: 30px;
     width: 100%;
-    height: 3px;
-    background: linear-gradient(to top, rgba(0, 0, 0, 0.5), transparent); } }
+    min-height: 1px;
+    background: #3b3b3b; } }
 
 .center {
   text-align: center; }
@@ -132,8 +137,11 @@ textarea {
   color: #5b5b5b; }
 
 .article-item {
-  line-height: 0.5;
   margin-bottom: 35px; }
+  .article-item h2 {
+    margin-bottom: 5px; }
+  .article-item p {
+    margin-top: 5px; }
   .article-item a {
     color: inherit;
     text-decoration: none; }

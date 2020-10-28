@@ -29,44 +29,6 @@ fn author_name(author: &Option<String>) -> String {
     author.clone().unwrap_or("Anon".to_string())
 }
 
-//impl BasicAuth {
-//    /// Returns client's user-ID.
-//    pub fn user_id(&self) -> &Cow<'static, str> {
-//        &self.0.user_id()
-//    }
-//
-//    /// Returns client's password.
-//    pub fn password(&self) -> Option<&Cow<'static, str>> {
-//        self.0.password()
-//    }
-//}
-//
-//impl FromRequest for BasicAuth {
-//    type Future = Ready<Result<Self, Self::Error>>;
-//    type Config = Config;
-//    type Error = AuthenticationError<Challenge>;
-//
-//    fn from_request(
-//        req: &HttpRequest,
-//        _: &mut Payload,
-//    ) -> <Self as FromRequest>::Future {
-//        ready(
-//            Authorization::<Basic>::parse(req)
-//                .map(|auth| BasicAuth(auth.into_scheme()))
-//                .map_err(|_| {
-//                    // TODO: debug! the original error
-//                    let challenge = req
-//                        .app_data::<Self::Config>()
-//                        .map(|config| config.0.clone())
-//                        // TODO: Add trace! about `Default::default` call
-//                        .unwrap_or_else(Default::default);
-//
-//                    AuthenticationError::new(challenge)
-//                }),
-//        )
-//    }
-//}
-
 #[derive(Clone, Default, Serialize, Deserialize)]
 struct UncheckedComment {
     timestamp: u64,
@@ -602,7 +564,7 @@ fn auth_check(req: &web::HttpRequest, password: &str) -> bool {
 
 fn unauthorized() -> actix_web::HttpResponse {
     actix_web::HttpResponse::Unauthorized()
-        .header("WWW-Authenticate", "Basic realm=\"Truthseeker\", charset=\"UTF-8\"")
+        .header("WWW-Authenticate", "Basic realm=\"Lesser Scholar\", charset=\"UTF-8\"")
         .finish()
 }
 

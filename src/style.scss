@@ -18,7 +18,7 @@ body {
     margin: auto;
     display: flex;
     flex-direction: column;
-    background-color: black;
+    background-color: $primary-text;
 }
 
 ul {
@@ -44,8 +44,8 @@ nav {
 }
 
 .logo {
-    width: 140px;
-    height: 140px;
+    width: 120px;
+    height: 120px;
 }
 
 header {
@@ -58,6 +58,7 @@ header {
     display: flex;
     flex-direction: column;
     margin-left: 20px;
+    min-width: 230px;
 }
 
 .title {
@@ -79,12 +80,12 @@ header {
     justify-content: space-around;
     margin-top: 20px;
 
-    border-bottom: 1px solid black;
+    border-bottom: 1px solid $primary-text;
 }
 
 .quote {
     font-size: 15px;
-    margin-left: 100px;
+    margin-left: 80px;
     margin-right: 60px;
     color: #5b5b5b;
 }
@@ -112,13 +113,13 @@ main {
 }
 
 .right_nav_divider {
-    width: 3px;
-    background: linear-gradient(to left,rgba(0, 0, 0, 0.5), transparent);
+    min-width: 1px;
+    background: $primary-text;
 }
 
 .comment_divider {
-    height: 3px;
-    background: linear-gradient(to top,rgba(0, 0, 0, 0.5), transparent);
+    min-height: 1px;
+    background: $primary-text;
     margin-top: 10px;
     margin-bottom: 10px;
 }
@@ -145,7 +146,13 @@ textarea {
     min-height: 150px;
 }
 
-@media (max-width: 600px) {
+@media (min-width: 650px) {
+    .right_navigation {
+        max-width: 230px;
+    }
+}
+
+@media (max-width: 650px) {
     main {
         flex-direction: column;
     }
@@ -161,8 +168,8 @@ textarea {
     .right_nav_divider {
         margin-top: 30px;
         width: 100%;
-        height: 3px;
-        background: linear-gradient(to top,rgba(0, 0, 0, 0.5), transparent);
+        min-height: 1px;
+        background: $primary-text;
     }
 }
 
@@ -176,7 +183,12 @@ textarea {
 }
 
 .article-item {
-    line-height: 0.5;
+    h2 {
+        margin-bottom: 5px;
+    }
+    p {
+        margin-top: 5px;
+    }
     margin-bottom: 35px;
     a {
         color: inherit;

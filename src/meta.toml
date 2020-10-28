@@ -1,4 +1,4 @@
-tags = ["Web", "Simplicity", "Meta"]
+tags = ["Web", "Simplicity", "Meta", "Book"]
 
 [[projects]]
 name = "bridge"
@@ -6,11 +6,11 @@ title = "Bridge.gg"
 order = 0
 
 [[articles]]
-name = "test"
-description = "testing home page"
-title = "Test"
-date = 2020-10-02
-tags = ["Meta"]
+name = "mindstorms"
+description = "A book review"
+title = "Mindstorms: Children, Computers and Powerful Ideas"
+date = 2020-10-12
+tags = ["Book"]
 
 [[articles]]
 name = "static_web_content"
