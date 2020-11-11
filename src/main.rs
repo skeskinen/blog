@@ -76,6 +76,7 @@ struct AppState {
     log_file_draft_lock: Arc<Mutex<()>>,
     log_output: RefCell<(std::fs::File, chrono::Date<chrono::Utc>)>,
     unchecked_comments_file_lock: Arc<Mutex<()>>,
+    // TODO: this is used in layout. Layout should not read data files.
     recent_comments: Arc<RwLock<TomlFile<RecentComments>>>,
     admin_password: String,
 }
