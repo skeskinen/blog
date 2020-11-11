@@ -1,4 +1,3 @@
-use actix_web::{web, Responder};
 use actix_service::Service;
 use askama::Template;
 use serde_derive::{Serialize, Deserialize};
@@ -10,7 +9,44 @@ use std::io::Write;
 use std::fs::OpenOptions;
 use std::sync::{Arc, RwLock, Mutex};
 
-// Random
+pub fn blog_data_dir() -> String {
+    let path: std::path::PathBuf = [&std::env::var("HOME").unwrap(), "blog_data"].iter().collect();
+    path.to_string_lossy().to_string()
+}
+
+pub fn unverified_comments_path() -> String {
+    let path: std::path::PathBuf = [&blog_data_dir(), "unverified_comments.toml"].iter().collect();
+    path.to_string_lossy().to_string()
+}
+
+pub fn comment_counts_path() -> String {
+    let path: std::path::PathBuf = [&blog_data_dir(), "comment_counts.toml"].iter().collect();
+    path.to_string_lossy().to_string()
+}
+
+pub fn recent_comments_path() -> String {
+    let path: std::path::PathBuf = [&blog_data_dir(), "recent_comments.toml"].iter().collect();
+    path.to_string_lossy().to_string()
+}
+
+pub fn comments_dir() -> String {
+    let path: std::path::PathBuf = [&blog_data_dir(), "comments"].iter().collect();
+    path.to_string_lossy().to_string()
+}
+
+pub fn comments_path(article: &str) -> String {
+    let path: std::path::PathBuf = [&blog_data_dir(), "comments", &format!("{}.toml", article)].iter().collect();
+    path.to_string_lossy().to_string()
+}
+
+pub fn logs_path() -> String {
+    let path: std::path::PathBuf = [&blog_data_dir(), "logs"].iter().collect();
+    path.to_string_lossy().to_string()
+}
+
+pub fn log_date_string(date: chrono::Date<chrono::Utc>) -> String {
+    date.format("%Y-%m-%d").to_string()
+}
 
 #[derive(Default, Clone, Copy)]
 struct RandomGenerator {
@@ -27,47 +63,10 @@ fn get_random(generator: &Cell<RandomGenerator>) -> u32 {
     return 0x31415926 ^ ((s.0 >> 16) + (s.0 << 16));
 }
 
-
-// Logging 
-
 #[derive(Default, Clone, Serialize, Deserialize)]
 struct CompactedLog {
     entries: HashMap<String, usize>,
 }
-
-fn get_compacted_log(mut path: std::path::PathBuf) -> CompactedLog {
-    path.push("compacted.toml");
-    if path.exists() {
-        read_toml(&path.to_string_lossy())
-    } else {
-        path.pop();
-        let mut cl = CompactedLog { entries: HashMap::new() };
-        for file in path.read_dir().unwrap() {
-            let log_contents = std::fs::read_to_string(file.unwrap().path()).unwrap();
-            for line in log_contents.split('\n') {
-                if !line.is_empty() {
-                    cl.entries.entry(line.to_string())
-                        .and_modify(|v| *v += 1)
-                        .or_insert(1);
-                }
-            }
-        }
-        path.push("compacted.toml");
-        std::fs::write(path, toml::to_string(&cl).unwrap()).unwrap();
-        cl
-    }
-}
-
-fn sum_compacted_log(a: CompactedLog, mut b: CompactedLog) -> CompactedLog {
-    for (k, v) in a.entries {
-        b.entries.entry(k)
-            .and_modify(|v2| *v2 += v)
-            .or_insert(v);
-    }
-    b
-}
-
-// Comments 
 
 struct AppState {
     rng: Cell<RandomGenerator>,
@@ -138,14 +137,6 @@ struct ErrorTemplate<'a> {
 }
 
 #[derive(Template)]
-#[template(path = "comment_approvals.html", escape = "none")]
-struct CommentApprovalsTemplate<'a> {
-    layout: LayoutTemplate<'a>,
-    comments: Vec<(String, &'a UncheckedComment)>,
-    author_name_fn: fn (&Option<String>) -> String,
-}
-
-#[derive(Template)]
 #[template(path = "stats.html")]
 struct StatsTemplate<'a> {
     layout: LayoutTemplate<'a>,
@@ -199,51 +190,6 @@ struct Meta {
     projects_map: HashMap<String, (Project, String)>,
     articles_map: HashMap<String, (Article, String)>,
     recent_articles: Vec<Article>,
-}
-
-#[derive(Clone, Default, Serialize, Deserialize)]
-pub struct UncheckedComment {
-    pub timestamp: u64,
-    pub author: Option<String>,
-    pub website: Option<String>,
-    pub text: String,
-    pub article: String,
-}
-
-#[derive(Default, Serialize, Deserialize)]
-pub struct UncheckedComments {
-    pub comments: Vec<UncheckedComment>,
-}
-
-#[derive(Default, Serialize, Deserialize)]
-pub struct ApprovedComment {
-    pub timestamp: u64,
-    pub author: Option<String>,
-    pub website: Option<String>,
-    pub text: String,
-    pub post_index: i64,
-    pub reply_to: Option<i64>,
-}
-
-#[derive(Default, Serialize, Deserialize)]
-pub struct ApprovedComments {
-    pub comments: Vec<ApprovedComment>,
-}
-
-#[derive(Default, Serialize, Deserialize)]
-pub struct DisplayComment {
-    pub date: String,
-    pub author: String,
-    pub website: Option<String>,
-    pub text: String,
-    pub post_index: i64,
-    pub reply_to: Option<i64>,
-    pub replies: Vec<i64>
-}
-
-#[derive(Default, Clone, Serialize, Deserialize)]
-pub struct RecentComments {
-    pub recent_comments: Vec<String>,
 }
 
 fn layout_template(data: &web::Data<AppState>) -> LayoutTemplate {
@@ -357,96 +303,9 @@ fn timestamp_to_datestring(timestamp: &u64) -> String {
     chrono::NaiveDateTime::from_timestamp(timestamp.clone() as i64, 0).format("%Y-%m-%d").to_string()
 }
 
-fn extract_parent_post(text: String) -> (String, Option<i64>) {
-    let t = text.trim();
-    if t.starts_with("@") {
-        let chrs: &[char] = &[' ', '\n', '\t', '\r'];
-        let num_str = (&t[1..]).split(chrs).next().unwrap_or_default();
-        match str::parse::<i64>(&num_str) {
-            Ok(d) => {
-                (t[1..].trim_start_matches(|c| (c >= '0' && c <= '9') || c == ' ' || c == '\t' || c == '\r' || c == '\n').to_string(), Some(d))
-            },
-            Err(_) => 
-                (t.to_string(), None)
-        }
-    } else {
-        (t.to_string(), None)
-    }
-}
-
 fn append_to_file(path: &str, content: &str) {
     let mut file = OpenOptions::new().append(true).create(true).open(path).unwrap();
     write!(file, "{}", content).unwrap();
-}
-
-async fn comment(web::Path(name): web::Path<String>, web::Form(form): web::Form<CommentForm>, data: web::Data<AppState>) -> impl Responder {
-    match (form.author, form.text, form.website) {
-        (author, text, website) if author.len() > 100 || text.len() > 10000 || website.len() > 500 =>
-            error("Too long comment or name.", data).await,
-        (_, text, _) if text.is_empty() => 
-            error("Tried to submit empty comment.", data).await,
-        (author, text, website) => {
-            let time = std::time::SystemTime::now().duration_since(std::time::SystemTime::UNIX_EPOCH).unwrap().as_secs();
-            let comment = UncheckedComments { comments: vec!(UncheckedComment {
-                timestamp: time,
-                author: if author.is_empty() { None } else { Some(author) },
-                website: if website.is_empty() { None } else { Some(website) },
-                article: name.clone(),
-                text: text,
-            })};
-            {
-                let _lock_guard = data.unchecked_comments_file_lock.lock().unwrap();
-                append_to_file(&unverified_comments_path(), &toml::to_string(&comment).unwrap());
-            }
-            actix_web::HttpResponse::Found()
-                .header(actix_web::http::header::LOCATION, format!("/a/{}", name)).finish()
-        }
-    }
-}
-
-fn html_escape<T: AsRef<str>>(input: T) -> String {
-    let mut string = String::with_capacity(input.as_ref().len());
-    for c in input.as_ref().chars() {
-        if c != '<' && c != '>' {
-            string.push(c);
-        } 
-    }
-    string
-}
-
-async fn comment_approval(req: web::HttpRequest, data: web::Data<AppState>) -> web::HttpResponse {
-    if !auth_check(&req, &data.admin_password) {
-        return unauthorized();
-    }
-    let comments: UncheckedComments = read_toml_default(&unverified_comments_path());
-    let tmpl = CommentApprovalsTemplate {
-        layout: layout_template(&data),
-        comments: comments.comments.iter().map(|c| (markdown::to_html(&c.text), c)).collect(),
-        author_name_fn: author_name_fn,
-    };
-    actix_web::HttpResponse::Ok().body(tmpl.render().unwrap())
-}
-
-pub fn author_name_fn(author: &Option<String>) -> String {
-    match author {
-        None => "Anon".to_string(),
-        Some(s) => html_escape(s),
-    }
-}
-
-fn make_approved_comment(comment: &UncheckedComment, post_index: i64 ) -> ApprovedComments {
-    let (t, reply_to) = extract_parent_post(comment.text.clone());
-    
-    ApprovedComments {
-        comments: vec!(ApprovedComment {
-            timestamp: comment.timestamp,
-            author: comment.author.clone().map(html_escape),
-            website: comment.website.clone().map(html_escape),
-            text: markdown::to_html(&t),
-            post_index: post_index,
-            reply_to: reply_to,
-        })
-    }
 }
 
 fn fetch_incr_count(value: &mut toml::Value, key: &str) -> i64 {
@@ -471,60 +330,36 @@ fn fetch_incr_count(value: &mut toml::Value, key: &str) -> i64 {
     }
 }
 
-async fn comment_approval_post(req: web::HttpRequest, body: String, data: web::Data<AppState>) -> web::HttpResponse {
-    if !auth_check(&req, &data.admin_password) {
-        return unauthorized();
-    }
-    let mut approved_comments: Vec<(String, ApprovedComments)> = Vec::new();
-    {
-        let _lock_guard = data.unchecked_comments_file_lock.lock().unwrap();
-        let comment_list = read_toml::<UncheckedComments>(&unverified_comments_path()).comments;
-        let mut new_unchecked_data = UncheckedComments { comments: Vec::new() };
-        let mut comment_counts: TomlFile<toml::Value> = TomlFile::read(&comment_counts_path());
-    
-        let mut count = 0;
-        for item in body.split('&') {
-            let c = &comment_list[count];
-            match item.split('=').skip(1).next() {
-                Some("ignore") => new_unchecked_data.comments.push(c.clone()),
-                Some("approve") => approved_comments.push((c.article.clone(), make_approved_comment(&c, fetch_incr_count(&mut comment_counts.toml, &c.article)))),
-                Some("delete") => (),
-                _ => unreachable!(),
+fn get_compacted_log(mut path: std::path::PathBuf) -> CompactedLog {
+    path.push("compacted.toml");
+    if path.exists() {
+        read_toml(&path.to_string_lossy())
+    } else {
+        path.pop();
+        let mut cl = CompactedLog { entries: HashMap::new() };
+        for file in path.read_dir().unwrap() {
+            let log_contents = std::fs::read_to_string(file.unwrap().path()).unwrap();
+            for line in log_contents.split('\n') {
+                if !line.is_empty() {
+                    cl.entries.entry(line.to_string())
+                        .and_modify(|v| *v += 1)
+                        .or_insert(1);
+                }
             }
-            count += 1;
         }
-        for i in count .. comment_list.len() {
-            new_unchecked_data.comments.push(comment_list[i].clone());
-        }
-        if new_unchecked_data.comments.is_empty() {
-            std::fs::write(unverified_comments_path(), "").unwrap();
-        } else {
-            std::fs::write(unverified_comments_path(), toml::to_string(&new_unchecked_data).unwrap()).unwrap();
-        }
-
-        comment_counts.write();
+        path.push("compacted.toml");
+        std::fs::write(path, toml::to_string(&cl).unwrap()).unwrap();
+        cl
     }
-    std::fs::create_dir_all(&comments_dir()).unwrap();
+}
 
-    let mut recent_comments = data.recent_comments.read().unwrap().toml.recent_comments.clone();
-
-    for (key, val) in approved_comments {
-        append_to_file(&comments_path(&key), &toml::to_string(&val).unwrap());
-        if let Some(i) = recent_comments.iter().position(|rc| rc == &key) {
-            recent_comments.remove(i);
-        }
-        if recent_comments.len() > 6 {
-            recent_comments.pop();
-        }
-        recent_comments.insert(0, key);
+fn sum_compacted_log(a: CompactedLog, mut b: CompactedLog) -> CompactedLog {
+    for (k, v) in a.entries {
+        b.entries.entry(k)
+            .and_modify(|v2| *v2 += v)
+            .or_insert(v);
     }
-    {
-        let mut w = data.recent_comments.write().unwrap();
-        w.toml = RecentComments { recent_comments: recent_comments };
-        w.write();
-    }
-
-    comment_approval(req, data).await
+    b
 }
 
 fn base64_char_value(c: char) -> u8 {
@@ -613,7 +448,7 @@ async fn stats(req: web::HttpRequest, data: web::Data<AppState>) -> actix_web::H
 }
 
 
-fn make_meta(meta_file: MetaFile) -> Meta {
+pub fn make_meta(meta_file: MetaFile) -> Meta {
     let articles = HashMap::from_iter(meta_file.articles.clone().into_iter().map(|a| {
         let file_path = format!("articles/{}.md", a.name);
         let md = markdown::file_to_html(std::path::Path::new(&file_path)).expect(&format!("Failed to open article {}", a.name));
@@ -644,45 +479,6 @@ fn make_meta(meta_file: MetaFile) -> Meta {
         tags: tags,
         recent_articles: meta_file.articles
     }
-}
-
-fn blog_data_dir() -> String {
-    let path: std::path::PathBuf = [&std::env::var("HOME").unwrap(), "blog_data"].iter().collect();
-    path.to_string_lossy().to_string()
-}
-
-fn unverified_comments_path() -> String {
-    let path: std::path::PathBuf = [&blog_data_dir(), "unverified_comments.toml"].iter().collect();
-    path.to_string_lossy().to_string()
-}
-
-fn comment_counts_path() -> String {
-    let path: std::path::PathBuf = [&blog_data_dir(), "comment_counts.toml"].iter().collect();
-    path.to_string_lossy().to_string()
-}
-
-fn recent_comments_path() -> String {
-    let path: std::path::PathBuf = [&blog_data_dir(), "recent_comments.toml"].iter().collect();
-    path.to_string_lossy().to_string()
-}
-
-fn comments_dir() -> String {
-    let path: std::path::PathBuf = [&blog_data_dir(), "comments"].iter().collect();
-    path.to_string_lossy().to_string()
-}
-
-fn comments_path(article: &str) -> String {
-    let path: std::path::PathBuf = [&blog_data_dir(), "comments", &format!("{}.toml", article)].iter().collect();
-    path.to_string_lossy().to_string()
-}
-
-fn logs_path() -> String {
-    let path: std::path::PathBuf = [&blog_data_dir(), "logs"].iter().collect();
-    path.to_string_lossy().to_string()
-}
-
-fn log_date_string(date: chrono::Date<chrono::Utc>) -> String {
-    date.format("%Y-%m-%d").to_string()
 }
 
 fn log_file(lock: Arc<Mutex<()>>) -> (std::fs::File, chrono::Date<chrono::Utc>) {
@@ -743,54 +539,4 @@ fn get_admin_password() -> String {
     } else {
         "admin:password".to_string()
     }
-}
-
-#[actix_web::main]
-async fn main() -> std::io::Result<()> {
-    let quotes: Quotes = read_toml("src/quotes.toml");
-    let meta = make_meta(read_toml("src/meta.toml"));
-    
-    let log_file_draft_lock = Arc::new(Mutex::new(()));
-    let unchecked_comments_file_lock = Arc::new(Mutex::new(()));
-
-    let recent_comments = Arc::new(RwLock::new(TomlFile::read_default(&recent_comments_path())));
-    let password = get_admin_password();
-
-    actix_web::HttpServer::new(move || {
-        actix_web::App::new()
-            .data(AppState {
-                rng: Cell::new(init_rng()),
-                quote_data: quotes.clone(),
-                meta: meta.clone(),
-                log_file_draft_lock: log_file_draft_lock.clone(),
-                log_output: RefCell::new(log_file(log_file_draft_lock.clone())),
-                unchecked_comments_file_lock: unchecked_comments_file_lock.clone(),
-                recent_comments: recent_comments.clone(),
-                admin_password: password.clone(),
-            })
-            .wrap_fn(|req, srv| {
-                let data: &actix_web::web::Data<AppState> = req.app_data().unwrap();
-                let today = chrono::Utc::today();
-                if today > data.log_output.borrow().1 {
-                    data.log_output.replace(log_file(data.log_file_draft_lock.clone()));
-                }
-                write!(data.log_output.borrow_mut().0, "{} {}\n", req.method(), req.path()).unwrap_or(());
-
-                srv.call(req)
-            })
-            .route("/", web::get().to(index))
-            .route("/about", web::get().to(about))
-            .route("/archive", web::get().to(archive))
-            .route("/a/{name}", web::get().to(article))
-            .route("/tag/{name}", web::get().to(tag))
-            .route("/comment/{name}", web::post().to(comment))
-            .route("/comment_approval", web::get().to(comment_approval))
-            .route("/comment_approval", web::post().to(comment_approval_post))
-            .route("/stats", web::get().to(stats))
-            .service(actix_files::Files::new("/", "static"))
-            .default_service(web::get().to(p404))
-    })
-    .bind("127.0.0.1:8080")?
-    .run()
-    .await
 }

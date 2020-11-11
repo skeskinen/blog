@@ -1,1 +1,4 @@
-<div class="article-header">Posted on {{article.date}}. Tagged: {% for t in article.tags %} <a class="tag" href="/tag/{{t}}">{{t}}</a>{% endfor %}</div>
+<div class="article-header">Posted on {{article.date}}. Tagged: 
+{% for t in article.tags %}
+<a class="tag" href="/tag/{{t}}">{{t}}</a>{% if !loop.last -%},{% endif -%}
+{% endfor %}</div>

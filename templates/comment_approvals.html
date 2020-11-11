@@ -3,8 +3,8 @@
 <form method="POST">
 {% for comment in comments %}
     Article: <a href="/a/{{ comment.1.article }}">{{ comment.1.article }}</a> <br/>
-    Author: {{ author_name(comment.1.author) }} <br/>
-    Website: {{ author_name(comment.1.website) }} <br/>
+    Author: {{ author_name_fn(comment.1.author) }} <br/>
+    Website: {{ author_name_fn(comment.1.website) }} <br/>
     {{ comment.0 }}
     <label>Ignore</label> <input type=radio name={{loop.index0}} value="ignore" checked>
     <label>Approve</label> <input type=radio name={{loop.index0}} value="approve">
